@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased select-none font-sans text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-950;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Custom UI Utilities for One-Hand Mobile Operation */
+.btn-touch {
+  @apply min-h-[52px] min-w-[52px] active:scale-95 transition-all duration-150 rounded-xl font-bold flex items-center justify-center shadow-sm text-base sm:text-lg cursor-pointer disabled:opacity-50 disabled:pointer-events-none;
+}
+
+.card-glass {
+  @apply bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 shadow-sm rounded-2xl transition-all duration-200;
+}
+
+.card-glass-hover {
+  @apply card-glass hover:shadow-md hover:border-emerald-500/40 dark:hover:border-emerald-500/40;
+}
+
+/* Pulse animation for active sync status */
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+.pulse-badge {
+  animation: pulse-ring 2s infinite ease-in-out;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 dark:bg-slate-700 rounded-full;
+}
