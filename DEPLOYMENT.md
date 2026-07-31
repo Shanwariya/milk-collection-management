@@ -61,7 +61,8 @@ In your hosting platform environment settings, add the following **REQUIRED** ba
 2. Import your GitHub repository.
 3. In **Environment Variables**, add:
    - `VITE_API_URL`: `https://your-backend-api.onrender.com/api`
-4. Click **Deploy**.
+4. The project includes [vercel.json](file:///c:/Users/USER-PC/.gemini/antigravity-ide/scratch/milk-collection-app/vercel.json) at the root directory to handle client-side React Router rewrites (`/index.html`) so refreshing or accessing sub-routes directly works without Vercel 404 errors.
+5. Click **Deploy**.
 
 ---
 
