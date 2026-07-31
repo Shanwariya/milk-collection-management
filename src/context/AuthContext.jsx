@@ -11,19 +11,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem('milkman_token') || '');
   const [showRateModal, setShowRateModal] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      const todayStr = new Date().toISOString().split('T')[0];
-      const lastPrompt = localStorage.getItem('milkman_last_rate_prompt');
-      if (lastPrompt !== todayStr) {
-        setShowRateModal(true);
-      }
-    }
-  }, [user]);
-
   const dismissRateModal = () => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    localStorage.setItem('milkman_last_rate_prompt', todayStr);
     setShowRateModal(false);
   };
 
@@ -34,13 +22,6 @@ export const AuthProvider = ({ children }) => {
       setToken(res.token);
       localStorage.setItem('milkman_user', JSON.stringify(res.user));
       localStorage.setItem('milkman_token', res.token);
-      
-      const todayStr = new Date().toISOString().split('T')[0];
-      const lastPrompt = localStorage.getItem('milkman_last_rate_prompt');
-      if (lastPrompt !== todayStr) {
-        setShowRateModal(true);
-      }
-
       return { success: true };
     }
     return { success: false, message: res.message || 'Login failed' };

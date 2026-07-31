@@ -193,30 +193,59 @@ class DBManager {
     const uName = (username || '').trim().toLowerCase();
     const pWord = (password || '').trim();
 
-    if (this.isPg) {
-      const userRes = await this.pool.query('SELECT * FROM users WHERE LOWER(username) = $1 AND (password = $2 OR password = $3)', [uName, password, pWord]);
-      if (userRes.rows.length > 0) return userRes.rows[0];
+    const verifyPassword = (inputPass, storedPass) => {
+      if (!inputPass || !storedPass) return false;
+      const trimmedInput = inputPass.trim();
+      const trimmedStored = storedPass.trim();
+      if (trimmedInput === trimmedStored || inputPass === storedPass) return true;
+      try {
+        return bcrypt.compareSync(trimmedInput, storedPass) || bcrypt.compareSync(inputPass, storedPass);
+      } catch (e) {
+        return false;
+      }
+    };
 
-      const custRes = await this.pool.query('SELECT * FROM customers WHERE LOWER(username) = $1 AND (password = $2 OR password = $3)', [uName, password, pWord]);
+    if (this.isPg) {
+      // 1. Check users table
+      const userRes = await this.pool.query('SELECT * FROM users WHERE LOWER(username) = $1', [uName]);
+      if (userRes.rows.length > 0) {
+        const u = userRes.rows[0];
+        if (verifyPassword(password, u.password)) {
+          return {
+            id: u.id,
+            username: u.username,
+            full_name: u.full_name,
+            role: u.role,
+            customer_id: u.role === 'customer' ? (u.customer_id || u.username) : null
+          };
+        }
+      }
+
+      // 2. Check customers table
+      const custRes = await this.pool.query('SELECT * FROM customers WHERE LOWER(username) = $1', [uName]);
       if (custRes.rows.length > 0) {
         const c = custRes.rows[0];
-        return {
-          id: c.id,
-          username: c.username,
-          full_name: c.name,
-          role: 'customer',
-          customer_id: c.id
-        };
+        if (verifyPassword(password, c.password)) {
+          return {
+            id: c.id,
+            username: c.username,
+            full_name: c.name,
+            role: 'customer',
+            customer_id: c.id
+          };
+        }
       }
+
+      console.warn(`[AUTH FAIL] Login failed for username "${uName}"`);
       return null;
     } else {
       const u = (this.data.users || []).find(user => 
-        user.username.toLowerCase() === uName && (user.password === password || user.password === pWord)
+        user.username.toLowerCase() === uName && verifyPassword(password, user.password)
       );
       if (u) return u;
 
       const cust = (this.data.customers || []).find(c => 
-        c.username && c.username.toLowerCase() === uName && (c.password === password || c.password === pWord)
+        c.username && c.username.toLowerCase() === uName && verifyPassword(password, c.password)
       );
       if (cust) {
         return {
@@ -246,6 +275,13 @@ class DBManager {
         'INSERT INTO customers (id, username, password, name, phone, address, notes, role) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
         [id, uName, pWord, name.trim(), phone || '', address || '', notes || '', 'customer']
       );
+
+      // Dual-table sync: insert into users table as well
+      await this.pool.query(
+        'INSERT INTO users (username, password, full_name, role) VALUES ($1, $2, $3, $4) ON CONFLICT (username) DO NOTHING',
+        [uName, pWord, name.trim(), 'customer']
+      );
+
       return { customer: insertRes.rows[0] };
     } else {
       const existingUser = (this.data.users || []).find(u => u.username.toLowerCase() === uName) ||

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
-import { Sun, CheckCircle, IndianRupee } from 'lucide-react';
+import { Sun, CheckCircle } from 'lucide-react';
 
 export const DailyRateModal = () => {
   const { showRateModal, dismissRateModal, isMilkman } = useAuth();
+  const { refreshData } = useApp();
   const [cowRate, setCowRate] = useState(20);
   const [buffaloRate, setBuffaloRate] = useState(30);
   const [loading, setLoading] = useState(false);
@@ -15,10 +17,19 @@ export const DailyRateModal = () => {
         if (res.success && res.rates) {
           setCowRate(res.rates.cow_rate || 20);
           setBuffaloRate(res.rates.buffalo_rate || 30);
+
+          // Check if rates were already updated today in PostgreSQL
+          if (res.rates.updated_at) {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const updatedDateStr = String(res.rates.updated_at).split('T')[0];
+            if (updatedDateStr === todayStr) {
+              dismissRateModal();
+            }
+          }
         }
       });
     }
-  }, [showRateModal]);
+  }, [showRateModal, dismissRateModal]);
 
   if (!showRateModal) return null;
 
@@ -27,6 +38,7 @@ export const DailyRateModal = () => {
     setLoading(true);
     if (isMilkman) {
       await api.updateRates(parseFloat(cowRate), parseFloat(buffaloRate));
+      if (refreshData) await refreshData();
     }
     setLoading(false);
     dismissRateModal();
