@@ -27,6 +27,18 @@ export const api = {
     }
   },
 
+  verifySession: async () => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        headers: getAuthHeaders()
+      });
+      return await res.json();
+    } catch (err) {
+      console.error('API Error (verifySession):', err);
+      return { success: false, message: 'Unable to connect to the server.' };
+    }
+  },
+
   register: async (registerData) => {
     try {
       const res = await fetch(`${API_BASE}/auth/register`, {

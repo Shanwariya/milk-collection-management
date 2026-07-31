@@ -19,8 +19,11 @@ app.use(cors({
       callback(null, true);
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+app.options('*', cors());
 app.use(express.json());
 
 // Auth Middleware
@@ -28,17 +31,37 @@ const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) {
-    req.user = { username: 'milkman', role: 'milkman' };
+    req.user = null;
     return next();
   }
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) req.user = { username: 'milkman', role: 'milkman' };
+    if (err) req.user = null;
     else req.user = user;
     next();
   });
 };
 
-// 1. LOGIN & REGISTER API
+// 1. LOGIN, REGISTER & SESSION API
+app.get('/api/auth/me', authenticateToken, async (req, res) => {
+  if (!req.user || !req.user.username) {
+    return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+  }
+
+  const user = await db.getUserByUsername(req.user.username);
+  if (!user) {
+    return res.status(401).json({ success: false, message: 'User account not found' });
+  }
+
+  res.json({
+    success: true,
+    user: {
+      username: user.username,
+      role: user.role,
+      fullName: user.full_name || user.username,
+      customer_id: user.customer_id || (user.role === 'customer' ? user.id : null)
+    }
+  });
+});
 app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {

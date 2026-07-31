@@ -309,6 +309,49 @@ class DBManager {
     }
   }
 
+  async getUserByUsername(username) {
+    const uName = (username || '').trim().toLowerCase();
+    if (this.isPg) {
+      const userRes = await this.pool.query('SELECT * FROM users WHERE LOWER(username) = $1', [uName]);
+      if (userRes.rows.length > 0) {
+        const u = userRes.rows[0];
+        return {
+          id: u.id,
+          username: u.username,
+          full_name: u.full_name,
+          role: u.role,
+          customer_id: u.role === 'customer' ? (u.customer_id || u.username) : null
+        };
+      }
+      const custRes = await this.pool.query('SELECT * FROM customers WHERE LOWER(username) = $1', [uName]);
+      if (custRes.rows.length > 0) {
+        const c = custRes.rows[0];
+        return {
+          id: c.id,
+          username: c.username,
+          full_name: c.name,
+          role: 'customer',
+          customer_id: c.id
+        };
+      }
+      return null;
+    } else {
+      const u = (this.data.users || []).find(user => user.username.toLowerCase() === uName);
+      if (u) return u;
+      const cust = (this.data.customers || []).find(c => c.username && c.username.toLowerCase() === uName);
+      if (cust) {
+        return {
+          id: cust.id,
+          username: cust.username,
+          full_name: cust.name,
+          role: 'customer',
+          customer_id: cust.id
+        };
+      }
+      return null;
+    }
+  }
+
   async getCustomers() {
     if (this.isPg) {
       const res = await this.pool.query('SELECT * FROM customers ORDER BY created_at DESC');

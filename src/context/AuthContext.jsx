@@ -11,6 +11,19 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem('milkman_token') || '');
   const [showRateModal, setShowRateModal] = useState(false);
 
+  useEffect(() => {
+    if (token) {
+      api.verifySession().then(res => {
+        if (res.success && res.user) {
+          setUser(res.user);
+          localStorage.setItem('milkman_user', JSON.stringify(res.user));
+        } else {
+          logout();
+        }
+      });
+    }
+  }, []);
+
   const dismissRateModal = () => {
     setShowRateModal(false);
   };

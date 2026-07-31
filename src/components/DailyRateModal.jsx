@@ -21,7 +21,12 @@ export const DailyRateModal = () => {
           // Check if rates were already updated today in PostgreSQL
           if (res.rates.updated_at) {
             const todayStr = new Date().toISOString().split('T')[0];
-            const updatedDateStr = String(res.rates.updated_at).split('T')[0];
+            let updatedDateStr = '';
+            try {
+              updatedDateStr = new Date(res.rates.updated_at).toISOString().split('T')[0];
+            } catch (e) {
+              updatedDateStr = String(res.rates.updated_at).split(' ')[0];
+            }
             if (updatedDateStr === todayStr) {
               dismissRateModal();
             }
